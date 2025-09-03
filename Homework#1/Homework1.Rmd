@@ -1,0 +1,167 @@
+---
+title: "Homework#1"
+author: "Riyesh Nath"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+GIVEN COMMAND BY PROFESSOR PLUS SOME OTHER COMMANDS TO READ THE ENTIRE DATA 
+```{r}
+library(ggplot2)
+library(dplyr)
+load("data/d_HHP2020_24.Rdata")
+d_HHP2020_24[1:10,1:6]
+head(d_HHP2020_24,5)
+attach(d_HHP2020_24)
+
+summary(d_HHP2020_24)
+summary(Age[Gender == "female"])
+summary(Age[Gender == "male"])
+summary(Age[Gender == "trans"])
+summary(Age[Gender == "other"])
+mean(Age[Gender == "female"])
+sd(Age[Gender == "female"])
+mean(Age[Gender == "male"])
+sd(Age[Gender == "male"])
+```
+
+BASIC DATA EXPLORATION WITH A FOCUS ON JOB LOSS
+```{r}
+library(ggplot2)
+
+# CHECK TO SEE THE PERCENT OF JOB LOSS BY SECTOR
+
+jobloss <- d_HHP2020_24 %>%
+  mutate(work_kind = if_else(is.na(work_kind), "NA", work_kind)) %>%
+  group_by(work_kind) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+
+ggplot(jobloss, aes(x= work_kind, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+
+# CHECK BY AGE
+jobloss <- d_HHP2020_24 %>%
+  mutate(
+    age_group = cut(Age, breaks = seq(0, 100, by = 5), right = TRUE)
+    ) %>%
+  group_by(age_group) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+
+ggplot(jobloss, aes(x= age_group, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+
+# CHECK BY INCOME MIDPOINT
+jobloss <- d_HHP2020_24 %>%
+  filter(!is.na(income_midpoint)) %>%
+  group_by(income_midpoint) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+
+ggplot(jobloss, aes(x= income_midpoint, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+
+# CHECK BY STATE
+jobloss <- d_HHP2020_24 %>%
+  mutate(Census_division = if_else(is.na(Census_division), "NA", Census_division)) %>%
+  group_by(Census_division) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+
+ggplot(jobloss, aes(x= Census_division, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+
+# CHECK BY RACE
+jobloss <- d_HHP2020_24 %>%
+  mutate(Race = if_else(is.na(Race), "NA", Race)) %>%
+  group_by(Race) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+print(jobloss)
+ggplot(jobloss, aes(x= Race, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+
+
+# CHECK BY EDUCATION
+jobloss <- d_HHP2020_24 %>%
+  mutate(Education = if_else(is.na(Education), "NA", Education)) %>%
+  group_by(Education) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100,
+    .groups = "drop"
+  )
+
+ggplot(jobloss, aes(x= Education, y=yes_percent)) +
+  geom_col() +
+  coord_flip()
+```
+
+AS WE ARE JUST IN EXPLORATION PHASE, I AM CURIOUS TO SEE HOW MUCH PERCENT OF THOSE WHO ARE BLACK, HAVE EDUCATION BELOW COLLEGE GRAD LEVEL, AND MAKE LESS THAN 60,000 LOST THEIR JOB DURING THIS PERIOD.
+
+```{r}
+black_sixtythousand_lowerEducation <- d_HHP2020_24 %>%
+  filter(Education %in% c("some hs", "some college", "lt hs", "high school"), Race == "Black", income_midpoint < 60000) %>%
+  summarise(
+    total = n(),
+    num_of_yes = sum(workloss == "yes recent household loss of work", na.rm = TRUE),
+    yes_percent = (num_of_yes / total)*100
+  )
+
+print(black_sixtythousand_lowerEducation)
+```
+CURIOUS TO SEE IF MAJORITY FOR THOSE WITH LOWER EDUCATION AND WAGES ARE BLACK AMERICANS.
+
+```{r}
+IT_HS_DATASET <- d_HHP2020_24 %>%
+  filter(Education %in% c("some hs", "some college", "lt hs", "high school")) %>%
+  count(Race, name = "total") %>%
+  mutate(percent = 100 * total / sum(total))
+
+print(IT_HS_DATASET)
+ggplot(IT_HS_DATASET, aes(x=Race, y=percent)) + geom_col() + coord_flip()
+
+```
+
+```{r}
+WAGE_DATASET <- d_HHP2020_24 %>%
+  filter(income_midpoint < 60000) %>%
+  count(Race, name = "total") %>%
+  mutate(percent = 100 * total / sum(total))
+
+print(WAGE_DATASET)
+ggplot(WAGE_DATASET, aes(x=Race, y=percent)) + geom_col() + coord_flip()
+```
+
+LOOKING AT THIS, IT SEEMS THAT THIS MIGHT BE MORE A RATIO THAN TOTAL PERCENT DUE TO LARGE WHITE AMERICAN TOTAL. 
+GIVEN TIME, I WOULD STUDY THIS FURTHER USING RATIO RATHER THAN JUST A BASE TOTAL. 
+
