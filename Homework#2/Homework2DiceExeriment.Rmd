@@ -1,0 +1,95 @@
+---
+title: "Homework#2 - Dice experiment"
+author: "Riyesh Nath"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+### SUMMARY
+In this experiment, we will try to prove the fairness of a die that was heated in an oven for 20 minutes. We want to claim that this die is not fair.
+
+•	We first have null hypothesis to make claim that our dice is fair and we try to prove this claim wrong.
+
+  -	**Null Hypothesis**: The die is fair. The probability of getting 6 in one roll is 1/6 (P(getting 6) = 1/6)
+
+•	We then have alternative hypothesis which if proven right will contradict our null hypothesis. This will disprove that the dice is fair.
+
+  - **Alternative Hypothesis**: P(getting 6) != 1/6
+
+•	We have random variable for the experiment.
+
+  - **Random variable**: The number of times we get 6 in our total (n) rolls.
+
+•	Here we know that probability of getting 6 if the dice is fair. It is 1/6. We also want to see true or false for getting an outcome. Given that we can use Bernoulli trial here.  
+  
+
+#### TEST
+Below is how our Bernoulli distribution would look like:
+```{r}
+library(ggplot2)
+
+probability_of_rolling_6 <- 1/6
+data <- data.frame(
+  outcome=c("0- False","1- True"),
+  probability=c(1-probability_of_rolling_6, probability_of_rolling_6)
+)
+
+ggplot(data, aes(x=outcome, y=probability, fill=outcome)) + 
+  geom_bar(stat = "identity") + 
+  scale_fill_manual(values = c("red", "green") )+ 
+  labs(title="Probability of landing 6 on a die roll")
+
+```
+
+Running multiple experiments with multiple trials in each experiment, we can see how the distribution would look like. Here we will conduct the experiment using a small number of trials and then a large number of trials. This will show that having a larger trial size better represents all data including the tails. **THINK OF INCREASING THE NUMBER OF TRIALS ALLOWS YOU TO SEE COMPLETE RANGE AND INCREASING THE EXPERIMENT GIVES CLEARER PICTURE DUE TO CENTRAL LIMIT THEORM**.
+
+```{r}
+
+create_binomial_dist<- function(num_of_experiment, num_of_trials, probability) {
+  results <- rbinom(num_of_experiment, num_of_trials, probability)
+  data <- data.frame(got_six = results)
+
+  ggplot(data, aes(x=got_six)) +
+    geom_bar(fill = "blue")
+}
+
+create_binomial_dist(10, 20, probability_of_rolling_6)
+create_binomial_dist(100, 20, probability_of_rolling_6)
+create_binomial_dist(1000, 20, probability_of_rolling_6)
+create_binomial_dist(10000, 20, probability_of_rolling_6)
+create_binomial_dist(100000, 20, probability_of_rolling_6)
+
+create_binomial_dist(10, 360, probability_of_rolling_6)
+create_binomial_dist(100, 360, probability_of_rolling_6)
+create_binomial_dist(1000, 360, probability_of_rolling_6)
+create_binomial_dist(10000, 360, probability_of_rolling_6)
+create_binomial_dist(100000, 360, probability_of_rolling_6)
+
+```
+
+#### ANALYSIS
+In our experiment, we rolled the die 360 times and got 66 6s, 60 5s, 64 4s, 58 3s, 63 2s, 49 1s. Using binomial formula we get:
+360C66 * (1/6)^66 * (5/6)^294
+```{r}
+probability_result <- dbinom(66, size = 360, prob = 1/6)
+print(probability_result)
+```
+However this does not give us anything to show that 6 was rolled unfair amount of times. We can either use our Gaussian like distribution to fit our result and find p-value based on z score or just use binomial test. **I will use binomial test**
+
+#### HYPOTHESIS TESTING
+Here we can do binomial test to find the p-value with significance level of 5%. We will do two tailed test to find the fairness of the die. 
+```{r}
+binom.test(x = 66, n = 360, p = 1/6, alternative = "two.sided")
+```
+
+We see that the p-value is no less than or equal to .05. 
+
+Furthermore we do see very little amount of 1s with a value of 49 rolls. However this also gives us p-value more than .05 so nothing odd here either.
+```{r}
+binom.test(x = 49, n = 360, p = 1/6, alternative = "two.sided")
+```
+
+**CONCLUSION: CANNOT DISPROVE NULL HYPOTHESIS**
