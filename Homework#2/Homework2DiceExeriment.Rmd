@@ -1,14 +1,24 @@
 ---
-title: "Homework#2 - Dice experiment"
+title: "Homework#2 - Die experiment and Music Shuffle"
 author: "Riyesh Nath"
 date: "`r Sys.Date()`"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 
-### SUMMARY
+**GROUP MEMBERS:**
+Aqeel Choudhury,
+Heidy Collado and
+Ege Yanik
+ 
+DIE EXPERIMENT (PART 1)
+---------------
+ 
+### SUMMARY:
+
 In this experiment, we will try to prove the fairness of a die that was heated in an oven for 20 minutes. We want to claim that this die is not fair.
 
 •	We first have null hypothesis to make claim that our dice is fair and we try to prove this claim wrong.
@@ -30,6 +40,7 @@ In this experiment, we will try to prove the fairness of a die that was heated i
 Below is how our Bernoulli distribution would look like:
 ```{r}
 library(ggplot2)
+library(dplyr)
 
 probability_of_rolling_6 <- 1/6
 data <- data.frame(
@@ -93,3 +104,57 @@ binom.test(x = 49, n = 360, p = 1/6, alternative = "two.sided")
 ```
 
 **CONCLUSION: CANNOT DISPROVE NULL HYPOTHESIS**
+
+
+MUSIC SHUFFLE (PART 2)
+---------------
+
+In this experiment, we will try to see if a music shuffle in Spotify will be a fair shuffle with 1/n probability for each outcome. Or will we see certain songs appear more than others.
+
+•	We first have a null hypothesis to make claim that each song has equal chance of appearing.
+
+  -	**Null Hypothesis**: P(each song showing up) = 1/n 
+
+•	We then have alternative hypothesis which if proven right will contradict our null hypothesis. This will disprove that the shuffle is fair.
+
+  - **Alternative Hypothesis**: P(each song showing up) != 1/n 
+
+•	We have random variable for the experiment.
+
+  - **Random variable**: number of times a given song was played
+
+#### EXPLORE DATA
+We use Exportify to get an excel sheet of a playlist of 23 songs. The trial size is limited due to the limitation of time. The playlist has some songs that I listen to on regular basis and some songs I do not listen to. There are several repeated artist to see if the shuffling algorithm latches on to similar genre or creator.
+
+```{r}
+dataframe_of_playlist <- read.csv("Test.csv");
+attach(dataframe_of_playlist)
+
+ggplot(dataframe_of_playlist, aes(x = Track.Name, y = SONG.COUNT)) +
+  geom_col(fill = "steelblue") +
+  labs(title = "SONG APPEARANCE") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+print(SONG.COUNT)
+```
+
+#### OBSERVATION
+The first run played all song once before moving to repeats. The playlist iterates, it iterates each one randomly but plays all songs before iterating again.
+
+#### TEST
+We will do a chi test but the data still isn't sufficient. However, given that all song iterates at least once, I would be a better idea to stop here.
+
+**We will use CHI Test to be fairness of shuffle**
+
+```{r}
+chisq.test(x = SONG.COUNT, p = rep( 1/length(SONG.COUNT), length(SONG.COUNT)))
+```
+
+#### CONCLUSION
+We are not able to disprove the null hypothesis. However, I am not certain if the shuffle algorithm randomizes or creates weight as a song is not play so every song gets played atleast once. 
+NOTE: This experiment in incomplete. We would need to look at how shuffle works if used on playlist that is used more often. The playlist in this experiment was freshly created.
+
+  
+
+  
