@@ -3,7 +3,9 @@ title: "Homework#3 - Possible variables that has a strong correlation with partn
   status"
 author: "Riyesh Nath"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -23,9 +25,10 @@ In this project, we will do a data exploration of household pulse data and try t
 
 * The variables that we will test are: 
 
-  - Effect of education on partnership status.
-  - Effect of race on partnership status.
-  - 
+  - Education's effect on partnership status.
+  - Race and Gender’s effect on partnership status
+  - Effects of Age on Partnership Status
+  - How Employment Type Affects Marital Status
   
 ```{r}
 library(ggplot2)
@@ -204,4 +207,81 @@ count_asian_community <- ggplot(data = data_asian_community,
 grid.arrange(count_asian_community, count_black_community, count_white_community, ncol = 2)
 ```
 
+#### Nasrin -- Effects of Age on Partnership Status
 
+```{r}
+d_HHP2020_24 <- d_HHP2020_24 %>%
+mutate(Age_group = cut(Age,
+breaks = c(-Inf, 24, 29, 34, 39, 44, 49, 59, 69, Inf),
+labels = c("<=24","25-29","30-34","35-39",
+"40-44","45-49","50-59","60-69","70+")))
+ggplot(d_HHP2020_24, aes(x = Age_group, fill = Mar_Stat)) +
+geom_bar(position = "dodge") +
+labs(title = "Marital Status by Age Group",
+y = "Count", x = "Age Group") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+This gives a very general view of the data, showing a natural progression of marital status for the most part increasing as one gets older. The “Married” category overtakes the “Never” substantially by the mid-30s. As the “Never” married declines, however, there is a rise in “Divorce”, which starts increasing more rapidly in the 40s onwards, causing the eventual dip in “Married”.
+
+```{r}
+d_HHP2020_24 <- d_HHP2020_24 %>%
+mutate(Age_group = cut(Age,
+breaks = c(-Inf, 24, 29, 34, 39, 44, 49, 59, 69, Inf),
+labels = c("<=24","25-29","30-34","35-39",
+"40-44","45-49","50-59","60-69","70+")))
+# Define function filters
+plot_age_group <- function(data, group_label) {
+df <- data %>% filter(Age_group == group_label,
+Gender %in% c("male","female"),
+Mar_Stat %in% c("Married","never","divorced"))
+ggplot(df, aes(x = Gender, fill = Mar_Stat)) +
+geom_bar(position = "dodge") +
+labs(title = paste("Marital Status for Age Group", group_label),
+x = "Gender", y = "Count") +
+theme_minimal()
+}
+# Plots for each chosen age group
+grid.arrange(plot_age_group(d_HHP2020_24, "25-29"), plot_age_group(d_HHP2020_24, "35-39"),
+             plot_age_group(d_HHP2020_24, "45-49"), plot_age_group(d_HHP2020_24, "50-59"),
+             plot_age_group(d_HHP2020_24, "70+"), ncol = 2)
+
+
+```
+
+Men and Women in their 20s tend to fall mostly into “never” married, but women have a higher proportion of getting married. This suggests a timing difference between the two genders, as women tend to get married earlier than men. “Married” results in being the dominant partnering status for the rest of the age groups; however, it does fluctuate, and there’s eventually a steady increase in “divorce,” as the age group increases, with women dominating. People are more likely to get married the older they are, which is likely due to the desire to settle down however, oftentimes other important factors aren’t taken into account in making that decision, which is seen in the decrease in the number of people who are married and an increase in divorce by the time people hit their 70s.
+
+
+#### Marwan Kenawy -- How Employment Type Affects Marital Status
+
+```{r}
+ggplot(d_HHP2020_24, aes(x = Mar_Stat, fill = work_kind)) + 
+  geom_bar(position = "fill") +
+  labs( 
+    title = "Marital Status by Type of Employment", 
+    x = "Marital Status", 
+    y = "Proportion", 
+    fill = "Employment Type" 
+    ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Married individuals are more likely to be employed by private companies or the government, while widowed and divorced individuals appear
+more frequently in the “not employed/NA” category. Those who have never married show up a lot in the “NA” group, which may suggest they’re less tied to formal jobs. Self-employment and nonprofit work are present in every group, but they make up a much smaller share compared to private company or government jobs. Overall, the chart shows that stable forms of employment are strongly associated with being married, while unemployment is more prevalent among never-married, divorced, and widowed individuals.
+
+```{r}
+ggplot(d_HHP2020_24, aes(x = Mar_Stat, fill = work_kind)) + 
+  geom_bar(position = "fill") + 
+  facet_wrap(~ income_midpoint_factor, ncol = 3) + 
+  labs( 
+    title = "Marital Status by Employment Type Across Income Levels", 
+    x = "Marital Status", 
+    y = "Proportion", 
+    fill = "Employment Type" 
+    ) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
+
+When income is added as a second factor, we see more of a clearer picture. At relatively lower income levels (12,500–40,000),never-married individuals are strongly associated with unemployment (NA), while married individuals appear less connected to stable jobs. In the middle-income brackets (62,500–125,000), married individuals dominate, especially within private company and government employment, which shows the importance of stable, mid-level earnings in supporting marriage. At higher incomes (175,000–225,000), marriage becomes even more dominant, with most individuals employed in private companies and fewer in unemployment or alternative employment categories. Divorced, widowed, and separated people show up more often in the “NA” group, which could mean they’re less likely to be working or they may have job instability after changes in their marriage. All this shows that income strengthens the relationship between employment and marriage: stable, higher-paying jobs are linked with higher rates of marriage, while unemployment and low income are associated with never marrying or with separation.
