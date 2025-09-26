@@ -1,0 +1,62 @@
+---
+title: "Homework # 4 -"
+author: "Riyesh Nath"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+**GROUP MEMBERS:**
+Riyesh Nath
+
+### Summary:
+We will continue data exploration to see if Race has an effect on marriage rate. We will divide the ratio of marriage with race based on each region. We will divide marriage type to two category, married or not married. We filter out all the NA since that is a none answer.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(viridis)
+library(modelsummary)
+
+setwd("~/Desktop/GIT/Econometrics/Homework#3")
+load("data/d_HHP2020_24.Rdata")
+
+```
+
+```{r}
+#FUNCTIONS
+get_ratio_by_race_per_region <- function(dataframe, region) {
+  dataframe_race_proportion_region <- dataframe_marriage_rate_based_on_race %>%
+  filter(Region == region) %>%
+  group_by(Race) %>%
+  mutate(proportion = n/sum(n)) %>%
+  arrange(Race) %>%
+  ungroup()
+
+  
+  dataframe_race_proportion_region <-  dataframe_race_proportion_region %>% 
+    filter(married)
+
+  plot <- ggplot(dataframe_race_proportion_region, aes(x=Race, y=proportion, color=proportion)) +
+    geom_col() +
+    labs(title = paste("Porportion of married population in", region))
+  
+  print(plot)
+}
+
+```
+
+```{r}
+dataframe_marriage_rate_based_on_race <- d_HHP2020_24 %>%
+  filter(!is.na(Mar_Stat))  %>%
+  mutate(married = if_else(Mar_Stat == "Married", TRUE, FALSE)) %>%
+  count(Race, married, Region) 
+
+list_of_region <- unique(dataframe_marriage_rate_based_on_race$Region)
+
+for(region in list_of_region){
+  get_ratio_by_race_per_region(dataframe_marriage_rate_based_on_race, region)
+}
+
+```
+
+From a quick look, I see that despite the region, we have have the same marriage rate proportion for different race.
