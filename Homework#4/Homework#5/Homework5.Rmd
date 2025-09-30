@@ -1,0 +1,66 @@
+---
+title: "Homework#5"
+author: "Riyesh Nath"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Group Members:**
+Jason S.
+Bamba Cisse
+
+### Summary
+In our experiment, we attempt to create a model that allows us to predict potential income_midpoint given certain parameters from household census data. For our model, we will use linear regression model.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(viridis)
+library(modelsummary)
+
+setwd("~/Documents/GIT/Econometrics/Homework#3")
+load("data/d_HHP2020_24.Rdata")
+```
+
+#### Data Exploration
+For the first step, we want to examine the parameters that might be useful for our linear regression. Lets examine by doing some data exploration.
+
+```{r}
+## Function definitions - Guys, we can just reuse so no need for excess code. 
+
+draw_scatter_plot <- function(data, column){
+  ggplot(data, 
+         aes(x = .data[[column]], y = income_midpoint, color= .data[[column]])
+         ) +
+    geom_boxplot() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+draw_anova <- function(data, column){
+  formula <- as.formula(paste("income_midpoint~", column))
+  anov <- aov(formula, data = data)
+  summary(anov)
+}
+```
+
+```{r}
+summary(d_HHP2020_24)
+
+
+list_of_variables <- c("Education", "Mar_Stat", "Race", "Hispanic", "private_health_ins", 
+                       "work_kind", "public_health_ins", "Census_division")
+
+## I iterate through a loop of the list of variables so we don't have to recoden this. And inside it I do whatever I want to.
+## right now I have a box plot and anova to see which has significant value
+## I did not remove NA yet, but we can if we want.
+for(item in list_of_variables){
+  print(draw_scatter_plot(d_HHP2020_24, item))
+  print(draw_anova(d_HHP2020_24, item))
+}
+
+
+```
