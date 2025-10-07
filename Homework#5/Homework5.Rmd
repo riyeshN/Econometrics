@@ -6,17 +6,16 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 **Group Members:**
-Jason S.
-Bamba Cisse
+**Riyesh Nath, Jason S., Bamba Cisse and Romulo Jiminez**
 
 ### Summary
-In our experiment, we attempt to create a model that allows us to predict potential income_midpoint given certain parameters from household census data. For our model, we will use linear regression model.
+**In our experiment, we attempt to create a model that allows us to predict potential income_midpoint given certain parameters from household census data. For our model, we will use linear regression model.**
 
-```{r}
+```{r, echo=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(viridis)
@@ -26,13 +25,13 @@ setwd("~/Documents/GIT/Econometrics/Homework#3")
 load("data/d_HHP2020_24.Rdata")
 ```
 
-#### Data Exploration
-For the first step, we want to examine the parameters that might be useful for our linear regression. Lets examine by doing some data exploration.
+### Data Exploration
+**For the first step, we want to examine the parameters that might be useful for our linear regression. Lets examine by doing some data exploration. We will focus on a subcategory, using NorthEast Region**
 
-```{r}
+```{r, echo=FALSE}
 ## Function definitions - Guys, we can just reuse so no need for excess code. 
 
-draw_scatter_plot <- function(data, column){
+draw_box_plot <- function(data, column){
   ggplot(data, 
          aes(x = .data[[column]], y = income_midpoint, color= .data[[column]])
          ) +
@@ -45,22 +44,67 @@ draw_anova <- function(data, column){
   anov <- aov(formula, data = data)
   summary(anov)
 }
+
+draw_scatter_plot <- function(data, column){
+  ggplot(data, 
+         aes(x= .data[[column]], y=income_midpoint, color= .data[[column]])
+         ) +
+    geom_point() +
+    geom_smooth(method = "lm", se = TRUE)
+}
+
 ```
 
-```{r}
-summary(d_HHP2020_24)
+### Use ANOVA for categorical data to see which one has a greater effect on income_midpoint
 
+```{r, echo=FALSE}
+d_HHP2020_24 <- d_HHP2020_24 %>% filter(Region=="Northeast")
 
 list_of_variables <- c("Education", "Mar_Stat", "Race", "Hispanic", "private_health_ins", 
-                       "work_kind", "public_health_ins", "Census_division")
+                       "work_kind", "public_health_ins", "Census_division", "Gender", "workloss")
 
 ## I iterate through a loop of the list of variables so we don't have to recoden this. And inside it I do whatever I want to.
 ## right now I have a box plot and anova to see which has significant value
-## I did not remove NA yet, but we can if we want.
+## I removed NA.
+
 for(item in list_of_variables){
-  print(draw_scatter_plot(d_HHP2020_24, item))
-  print(draw_anova(d_HHP2020_24, item))
+  filter_data = d_HHP2020_24 %>% filter(!is.na(.data[[item]]))
+  print(draw_box_plot(filter_data, item))
+  print(draw_anova(filter_data, item))
 }
+```
+
+### Use geom_point to see which continuous data has a greate effect on income_midpoint
+
+```{r, echo=FALSE}
+list_of_scatter_var <- c("Age", "Number_people_HH", "Number_kids_HH", "ANXIOUS", "WORRY", "INTEREST", "DOWN")
+for(item in list_of_scatter_var){
+  filter_data = d_HHP2020_24 %>% filter(!is.na(.data[[item]]))
+  print(draw_scatter_plot(filter_data, item))
+}
+```
 
 
+```{r, echo=FALSE}
+
+filtered_data <- d_HHP2020_24 %>% filter(
+    !is.na(Education) & 
+    !is.na(workloss) &
+    !is.na(Gender) &
+    !is.na(Mar_Stat) &
+    !is.na(Race) &
+    !is.na(Number_people_HH) &
+    !is.na(Number_kids_HH) &
+    !is.na(private_health_ins) &
+    !is.na(public_health_ins) &
+    Age >= 25 & 
+    Age <= 55 
+  )
+
+model_1 <- lm(income_midpoint ~ Education + Mar_Stat + Race + private_health_ins + 
+                public_health_ins + Gender + workloss +
+                Number_people_HH + Number_kids_HH, 
+              data = filtered_data)
+
+summary(model_1)
 ```
