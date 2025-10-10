@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 **Group Members:**
-**Riyesh Nath, Jason S., Bamba Cisse and Romulo Jiminez**
+**Riyesh Nath, Jason Seda, and Bamba Cisse**
 
 ### Summary
 **In our experiment, we attempt to create a model that allows us to predict potential income_midpoint given certain parameters from household census data. For our model, we will use linear regression model.**
@@ -60,8 +60,8 @@ draw_scatter_plot <- function(data, column){
 ```{r, echo=FALSE}
 d_HHP2020_24 <- d_HHP2020_24 %>% filter(Region=="Northeast")
 
-list_of_variables <- c("Education", "Mar_Stat", "Race", "Hispanic", "private_health_ins", 
-                       "work_kind", "public_health_ins", "Census_division", "Gender", "workloss")
+list_of_variables <- c("Education", "Mar_Stat", "Race", "private_health_ins", "public_health_ins",
+                       "Gender", "workloss")
 
 ## I iterate through a loop of the list of variables so we don't have to recoden this. And inside it I do whatever I want to.
 ## right now I have a box plot and anova to see which has significant value
@@ -74,36 +74,87 @@ for(item in list_of_variables){
 }
 ```
 
+**Income Midpoint comparison vs. education:**
+
+There is a clear and consistent positive correlation between education and income. For 
+individuals with schooling up to the associate degree level, income tends to rise gradually, 
+showing a modest but steady upward trend. However, after completing a bachelor’s degree, 
+there is a substantial and more pronounced increase in income levels. This sharp jump 
+highlights a significant differentiation between those with a college education and those with 
+only some postsecondary or associate-level attainment, emphasizing the strong economic 
+advantage associated with higher educational attainment.
+
+**Income vs. marital status:**
+
+There is no substantial separation in income levels across most categories, except for a clear 
+and notable increase among married individuals. This jump is largely attributed to the presence 
+of multiple earners within the same household, which naturally raises the combined household 
+income. Apart from this distinction, income differences among other groups remain relatively 
+moderate and do not exhibit significant divergence.
+
+**Income vs. Race:**
+
+While, in principle, income should not differ by race or ethnicity, the data indicate a clear 
+tendency for higher income levels among individuals identifying as Asian or White in the 
+Northeast. This pattern may be influenced by cultural norms, educational attainment, and 
+occupational distribution prevalent within these groups. Indirectly, these factors contribute to 
+reinforcing existing socioeconomic stereotypes, even if the underlying causes are more 
+structural than individual.
+
+**Income vs. private Health insurance obtained:**
+
+Those with private health insurance consistently show higher overall median income levels.
+
+**Income vs. public health insurance:**
+
+A similar pattern appears when comparing public health insurance to income levels, suggesting 
+that lower-income individuals are generally less likely to hold any form of health insurance.
+
+**Income vs. Gender:**
+
+It shows a general income differentiation of male vs all “others”, yet, trans gender shows a much
+lower differentiation between those of the trans category.
+
+**Income vs. Workloss:**
+
+As expected, those with a recent loss in work have a lower overall expected income midpoint.
+
 ### Use geom_point to see which continuous data has a greate effect on income_midpoint
 
 ```{r, echo=FALSE}
-list_of_scatter_var <- c("Age", "Number_people_HH", "Number_kids_HH", "ANXIOUS", "WORRY", "INTEREST", "DOWN")
+list_of_scatter_var <- c( "ANXIOUS")
 for(item in list_of_scatter_var){
   filter_data = d_HHP2020_24 %>% filter(!is.na(.data[[item]]))
   print(draw_scatter_plot(filter_data, item))
 }
 ```
 
+**Income vs Anxiety:**
+
+When plotting general anxiety levels against income midpoints, we see a gradual decline in 
+income as anxiety increases. This could suggest that financial instability and job insecurity 
+contribute to higher anxiety, or conversely, that chronic anxiety limits access to higher-paying 
+roles due to challenges in high-pressure environments. It's also likely the relationship is cyclical, 
+anxiety both results from and reinforces lower income. This underscores the need to view 
+mental health as a key factor in economic opportunity.
 
 ```{r, echo=FALSE}
 
 filtered_data <- d_HHP2020_24 %>% filter(
     !is.na(Education) & 
-    !is.na(workloss) &
-    !is.na(Gender) &
     !is.na(Mar_Stat) &
     !is.na(Race) &
-    !is.na(Number_people_HH) &
-    !is.na(Number_kids_HH) &
     !is.na(private_health_ins) &
     !is.na(public_health_ins) &
+    !is.na(Gender) &
+    !is.na(workloss) &
+    !is.na(ANXIOUS) &
     Age >= 25 & 
     Age <= 55 
   )
 
 model_1 <- lm(income_midpoint ~ Education + Mar_Stat + Race + private_health_ins + 
-                public_health_ins + Gender + workloss +
-                Number_people_HH + Number_kids_HH, 
+                public_health_ins + Gender + workloss + ANXIOUS,
               data = filtered_data)
 
 summary(model_1)
