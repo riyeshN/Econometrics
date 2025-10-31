@@ -55,7 +55,7 @@ ggplot(mean_age_diff, aes(x = as.factor(Education_Level), y = mean_Age_DIFF, fil
     x = "Education Level",
     y = "Mean Age Difference",
     fill = "Education",
-    title = "Mean Age Difference by Education (Respondent vs Spouse) Not Born in US"
+    title = "Mean Age Difference by Education(Head of Household vs Spouse) Not Born in US"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -76,7 +76,7 @@ ggplot(mean_age_diff, aes(x = as.factor(Education_Level), y = mean_Age_DIFF, fil
     x = "Education Level",
     y = "Mean Age Difference",
     fill = "Education",
-    title = "Mean Age Difference by Education (Respondent vs Spouse) Not Born in US"
+    title = "Mean Age Difference by Education(Head of Household vs Spouse) Born in US"
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
