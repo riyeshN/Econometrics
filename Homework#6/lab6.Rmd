@@ -1,0 +1,108 @@
+---
+title: "lab6"
+author: "Jason Seda, Riyesh Nath"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(haven)
+library(dplyr)
+library(forcats)
+library(tibble)
+library(ggplot2)
+library(class)
+library(tidyr)
+setwd("~/Documents/Masters/Econometrics/data")# your directory structure will be different
+load("ACS_2021_couples.RData")
+```
+
+
+This lab investigates whether educational attainment and immigrant status influence the average spousal age difference in U.S. married couples using data from the 2021 American Community Survey (ACS).
+
+
+```{r, echo=FALSE}
+
+acs2021_couples_spouse <- acs2021_couples %>% 
+  filter(RELATE == "Spouse")
+acs2021_couples_spouse$RELATE <- fct_drop(acs2021_couples_spouse$RELATE)
+
+acs2021_couples_spouse$Age_DIFF <- acs2021_couples_spouse$h_age - acs2021_couples_spouse$AGE
+
+acs2021_couples_spouse_not_born_in_US <- acs2021_couples_spouse %>% filter(born_in_USstate == "not born in US state")
+acs2021_couples_spouse_born_in_US <- acs2021_couples_spouse %>% filter(born_in_USstate == "born in a state in the US")
+
+
+acs_long <- acs2021_couples_spouse_not_born_in_US %>%
+  pivot_longer(cols = c(EDUC, h_educ),
+               names_to = "Education_Type",
+               values_to = "Education_Level")
+
+mean_age_diff <- acs_long %>%
+  group_by(Education_Type, Education_Level) %>%
+  summarise(mean_Age_DIFF = mean(Age_DIFF, na.rm = TRUE))
+
+ggplot(mean_age_diff, aes(x = as.factor(Education_Level), y = mean_Age_DIFF, fill = Education_Type)) +
+  geom_col(position = position_dodge()) +
+  labs(
+    x = "Education Level",
+    y = "Mean Age Difference",
+    fill = "Education",
+    title = "Mean Age Difference by Education (Respondent vs Spouse) Not Born in US"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+acs_long <- acs2021_couples_spouse_born_in_US %>%
+  pivot_longer(cols = c(EDUC, h_educ),
+               names_to = "Education_Type",
+               values_to = "Education_Level")
+
+mean_age_diff <- acs_long %>%
+  group_by(Education_Type, Education_Level) %>%
+  summarise(mean_Age_DIFF = mean(Age_DIFF, na.rm = TRUE))
+
+ggplot(mean_age_diff, aes(x = as.factor(Education_Level), y = mean_Age_DIFF, fill = Education_Type)) +
+  geom_col(position = position_dodge()) +
+  labs(
+    x = "Education Level",
+    y = "Mean Age Difference",
+    fill = "Education",
+    title = "Mean Age Difference by Education (Respondent vs Spouse) Not Born in US"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r}
+anova_EDUC = aov(Age_DIFF ~ EDUC, data = acs2021_couples_spouse)
+summary(anova_EDUC)
+anova_H_EDUC = aov(Age_DIFF ~ h_educ, data = acs2021_couples_spouse)
+summary(anova_H_EDUC)
+```
+
+
+```{r}
+lm <- lm(data=acs2021_couples_spouse, formula = Age_DIFF ~ EDUC + h_educ)
+summary(lm)
+plot(lm)
+
+```
+
+```{r}
+lm <- lm(data=acs2021_couples_spouse, formula = Age_DIFF ~ EDUC + h_educ + born_in_USstate)
+summary(lm)
+plot(lm)
+
+```
+
