@@ -1,0 +1,161 @@
+---
+title: "lab 7"
+author: "Riyesh Nath, Michael Stewart, Jason Seda and Maurice Agonsi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(haven)
+
+
+setwd("~/Documents/Masters/Econometrics/data")# your directory structure will be different
+load("ACS_2021_couples.RData")
+
+#summary(acs2021_couples)
+```
+
+```{r}
+acs2021_couples$RACE <- fct_recode(as.factor(acs2021_couples$RACE),
+                                      "White" = "1",
+                                      "Black" = "2",
+                                      "American Indian or Alaska Native" = "3",
+                                      "Chinese" = "4",
+                                      "Japanese" = "5",
+                                      "Other Asian or Pacific Islander" = "6",
+                                      "Other race" = "7",
+                                      "two races" = "8",
+                                      "three races" = "9")
+                                      
+acs2021_couples$h_race <- fct_recode(as.factor(acs2021_couples$h_race),
+                                   "White" = "1",
+                                   "Black" = "2",
+                                   "American Indian or Alaska Native" = "3",
+                                   "Chinese" = "4",
+                                   "Japanese" = "5",
+                                   "Other Asian or Pacific Islander" = "6",
+                                   "Other race" = "7",
+                                   "two races" = "8",
+                                   "three races" = "9")
+
+acs2021_couples$HISPAN <- fct_recode(as.factor(acs2021_couples$HISPAN),
+                                     "Not Hispanic" = "0",
+                                     "Mexican" = "1",
+                                     "Puerto Rican" = "2",
+                                     "Cuban" = "3",
+                                     "Other" = "4")
+acs2021_couples$h_hispan <- fct_recode(as.factor(acs2021_couples$h_hispan),
+                                     "Not Hispanic" = "0",
+                                     "Mexican" = "1",
+                                     "Puerto Rican" = "2",
+                                     "Cuban" = "3",
+                                     "Other" = "4")
+
+```
+
+
+```{r}
+trad_data <- acs2021_couples %>% filter( (SEX == "Female") & (h_sex == "Male") )
+trad_data$he_more_than_10yrs_than_her <- as.numeric(trad_data$age_diff <= -10)
+```
+
+```{r}
+ols_out1 <- lm(he_more_than_10yrs_than_her ~ educ_hs + educ_somecoll + educ_college + educ_advdeg + AGE, data = trad_data)
+summary(ols_out1)
+
+```
+
+```{r}
+data_kansas_missouri <- trad_data %>% 
+  filter(STATEFIP %in% c("Kansas", "Missouri"))
+
+data_kansas_missouri$STATEFIP <- fct_drop(data_kansas_missouri$STATEFIP)
+summary(data_kansas_missouri$STATEFIP)
+
+data_kansas_missouri_age_gap_mean <- data_kansas_missouri %>%
+  group_by(STATEFIP) %>%
+  summarize(
+    prop_10plus_gap = mean(he_more_than_10yrs_than_her),
+    n = n()
+  )
+
+ggplot(data_kansas_missouri_age_gap_mean, aes(x = STATEFIP, y = prop_10plus_gap, fill = STATEFIP)) +
+  geom_col() +
+  geom_text(aes(label = paste0(round(prop_10plus_gap * 100, 2), "%")), 
+            vjust = -0.5) +
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "Kansas vs Missouri",
+       x = "State",
+       y = "Proportion") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r}
+table(trad_data$RACE)
+
+age_gap_by_race <- trad_data %>%
+  group_by(RACE) %>%
+  summarize(
+    prop_10plus_gap = mean(he_more_than_10yrs_than_her),
+    n = n()
+  ) %>%
+  arrange(desc(prop_10plus_gap))
+
+ggplot(age_gap_by_race, aes(x = reorder(RACE, prop_10plus_gap), y = prop_10plus_gap, fill = RACE)) +
+  geom_col() +
+  geom_text(aes(label = paste0(round(prop_10plus_gap * 100, 1), "%")), 
+            hjust = -0.2, size = 3) +
+  coord_flip() +
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By Woman's Race (US-wide)",
+       x = "Woman's Race",
+       y = "Proportion") +
+  scale_y_continuous(labels = scales::percent) +  # No limits now
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+trad_data$same_race <- as.numeric(trad_data$RACE == trad_data$h_race)
+race_interracial <- trad_data %>%
+  mutate(couple_type = ifelse(same_race == 1, "Same Race", "Interracial")) %>%
+  group_by(RACE, couple_type) %>%
+  summarize(
+    prop_10plus_gap = mean(he_more_than_10yrs_than_her),
+    n = n()
+  ) %>%
+  filter(n >= 100) 
+
+ggplot(race_interracial, aes(x = reorder(RACE, prop_10plus_gap), y = prop_10plus_gap, fill = couple_type)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = paste0(round(prop_10plus_gap * 100, 1), "%")), 
+            position = position_dodge(width = 0.9),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By Woman's Race and Interracial Status",
+       x = "Woman's Race",
+       y = "Proportion",
+       fill = "Couple Type") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 0.23)) +
+  scale_fill_manual(values = c("Interracial" = "#E74C3C", "Same Race" = "#3498DB")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+```
+
+```{r}
+lm <- lm(data = trad_data, formula = he_more_than_10yrs_than_her ~ same_race + RACE + h_race)
+summary(lm)
+```
+
+
