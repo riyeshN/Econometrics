@@ -1,6 +1,6 @@
 ---
-title: "lab 7"
-author: "Riyesh Nath, Michael Stewart, Jason Seda and Maurice Agonsi"
+title: "lab 8"
+author: "Riyesh Nath, Michael Stewart, and Jason Seda"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyverse)
 library(haven)
-
+library(pROC)
 
 setwd("~/Documents/Masters/Econometrics/data")# your directory structure will be different
 load("ACS_2021_couples.RData")
@@ -154,8 +154,51 @@ ggplot(race_interracial, aes(x = reorder(RACE, prop_10plus_gap), y = prop_10plus
 ```
 
 ```{r}
-lm <- lm(data = trad_data, formula = he_more_than_10yrs_than_her ~ same_race + RACE + h_race)
-summary(lm)
+
+summary(trad_data$born_in_USstate)
+not_born_in_usa_state_df = trad_data %>% filter(born_in_USstate == 'not born in US state')
+
+proportion_for_trad_data_not_usa_born <- not_born_in_usa_state_df %>%
+  group_by(EDUC, he_more_than_10yrs_than_her) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n))
+
+ggplot(proportion_for_trad_data_not_usa_born, aes(x= EDUC, y = prop, fill = factor(he_more_than_10yrs_than_her))) +
+  geom_col(position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+born_in_usa_state_df = trad_data %>% filter(born_in_USstate == 'born in a state in the US')
+
+proportion_for_trad_data_usa_born <- born_in_usa_state_df %>%
+  group_by(EDUC, he_more_than_10yrs_than_her) %>%
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n))
+
+ggplot(proportion_for_trad_data_usa_born, aes(x= EDUC, y = prop, fill = factor(he_more_than_10yrs_than_her))) +
+  geom_col(position = "dodge") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+```{r}
+logistic_modal <- glm(data = trad_data, formula = he_more_than_10yrs_than_her ~ same_race + RACE + h_race + EDUC + STATEFIP + h_age, family = binomial)
+
+predict_val <- predict(logistic_modal, trad_data, type = "response")
+
+roc_obj <- roc(trad_data$he_more_than_10yrs_than_her, predict_val)
+
+best_thr <- coords(roc_obj, "best", ret = "threshold")
+print(best_thr)
+
+summary(logistic_modal)
+auc(roc_obj)
+pred <- as.integer(predict_val >= 0.08025571)
+table(pred, trad_data$he_more_than_10yrs_than_her)
+
+
 ```
 
 

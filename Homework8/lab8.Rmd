@@ -1,0 +1,214 @@
+---
+title: "lab 8"
+author: "Riyesh Nath, and Jason Seda"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(haven)
+library(pROC)
+
+setwd("~/Documents/Masters/Econometrics/data")
+load("ACS_2021_couples.RData")
+
+#summary(acs2021_couples)
+```
+
+```{r, echo=FALSE, message=FALSE}
+
+acs2021_couples$RACE <- fct_recode(as.factor(acs2021_couples$RACE),
+                                      "White" = "1",
+                                      "Black" = "2",
+                                      "American Indian or Alaska Native" = "3",
+                                      "Chinese" = "4",
+                                      "Japanese" = "5",
+                                      "Other Asian or Pacific Islander" = "6",
+                                      "Other race" = "7",
+                                      "two races" = "8",
+                                      "three races" = "9")
+                                      
+acs2021_couples$h_race <- fct_recode(as.factor(acs2021_couples$h_race),
+                                   "White" = "1",
+                                   "Black" = "2",
+                                   "American Indian or Alaska Native" = "3",
+                                   "Chinese" = "4",
+                                   "Japanese" = "5",
+                                   "Other Asian or Pacific Islander" = "6",
+                                   "Other race" = "7",
+                                   "two races" = "8",
+                                   "three races" = "9")
+
+acs2021_couples$HISPAN <- fct_recode(as.factor(acs2021_couples$HISPAN),
+                                     "Not Hispanic" = "0",
+                                     "Mexican" = "1",
+                                     "Puerto Rican" = "2",
+                                     "Cuban" = "3",
+                                     "Other" = "4")
+acs2021_couples$h_hispan <- fct_recode(as.factor(acs2021_couples$h_hispan),
+                                     "Not Hispanic" = "0",
+                                     "Mexican" = "1",
+                                     "Puerto Rican" = "2",
+                                     "Cuban" = "3",
+                                     "Other" = "4")
+
+```
+
+
+***In this assignment, we attempt to see what parameters we can use to find if a given male household head is 10 years or older than his female partner.***
+
+
+```{r}
+trad_data <- acs2021_couples %>% filter( (SEX == "Female") & (h_sex == "Male") )
+trad_data$he_more_than_10yrs_than_her <- as.numeric(trad_data$age_diff <= -10)
+```
+
+***We first examine whether couple type (interracial vs. same-race) and race are associated with the proportion of women married to men more than 10 years older. Examined plots below indicate that certain groups have higher proportion of women married to men who are 10 years or older.***
+
+
+```{r, echo=FALSE, message=FALSE}
+trad_data$same_race <- as.numeric(trad_data$RACE == trad_data$h_race)
+race_interracial <- trad_data %>%
+  mutate(couple_type = ifelse(same_race == 1, "Same Race", "Interracial")) %>%
+  group_by(RACE, couple_type) %>%
+  summarize(
+    prop_10plus_gap = mean(he_more_than_10yrs_than_her),
+    n = n()
+  ) %>%
+  filter(n >= 100) 
+
+ggplot(race_interracial, aes(x = reorder(RACE, prop_10plus_gap), y = prop_10plus_gap, fill = couple_type)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = paste0(round(prop_10plus_gap * 100, 1), "%")), 
+            position = position_dodge(width = 0.9),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By Woman's Race and Interracial Status",
+       x = "Woman's Race",
+       y = "Proportion",
+       fill = "Couple Type") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 0.23)) +
+  scale_fill_manual(values = c("Interracial" = "red", "Same Race" = "blue")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+```
+
+***We also see a pattern where higher proportion of women with lower education level tend to marry men who are 10 years or older. However, the proportion is very low as the overall dataset has lower than 1% of the population where a woman is with a man who is 10 years or older.***
+
+```{r, echo=FALSE, message=FALSE}
+education_status_of_women_who_married_older_men_df <- as.data.frame.matrix(xtabs(data = trad_data, formula = ~  EDUC + he_more_than_10yrs_than_her))
+education_status_of_women_who_married_older_men_df <- rownames_to_column(education_status_of_women_who_married_older_men_df, var="EDUC")
+
+education_status_of_women_who_married_older_men_df$total <- education_status_of_women_who_married_older_men_df$`0` + education_status_of_women_who_married_older_men_df$`1`
+education_status_of_women_who_married_older_men_df$prop <- education_status_of_women_who_married_older_men_df$`1` / education_status_of_women_who_married_older_men_df$total
+education_status_of_women_who_married_older_men_df <- education_status_of_women_who_married_older_men_df %>%
+  filter(!is.na(prop))
+
+ggplot(data= education_status_of_women_who_married_older_men_df, aes(x = prop, y = EDUC)) +
+  geom_col(fill="blue") + 
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By Woman's Education",
+       y = "Woman's Education",
+       x = "Proportion")
+
+
+
+education_status_of_men_who_married_younger_women_df <- as.data.frame.matrix(xtabs(data = trad_data, formula = ~  h_educ + he_more_than_10yrs_than_her))
+education_status_of_men_who_married_younger_women_df <- rownames_to_column(education_status_of_men_who_married_younger_women_df, var="h_educ")
+
+education_status_of_men_who_married_younger_women_df$total <- education_status_of_men_who_married_younger_women_df$`0` + education_status_of_men_who_married_younger_women_df$`1`
+education_status_of_men_who_married_younger_women_df$prop <- education_status_of_men_who_married_younger_women_df$`1` / education_status_of_men_who_married_younger_women_df$total
+education_status_of_men_who_married_younger_women_df <- education_status_of_men_who_married_younger_women_df %>%
+  filter(!is.na(prop))
+
+ggplot(data= education_status_of_men_who_married_younger_women_df, aes(x = prop, y = h_educ)) +
+  geom_col(fill="red") + 
+  labs(title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By Men's Education",
+       y = "Man's Education",
+       x = "Proportion")
+
+
+```
+
+***We also look at the proportion of those born in the US state against those not born in the US state.The graph indicates that a higher proportion of those not born in the US state have 10 years age gap between men and women. However, here the proportion for both are still very low.*** 
+
+```{r}
+
+proportion_based_on_born_in_usa <- as.data.frame.matrix(xtabs(data= trad_data, formula = ~ born_in_USstate + he_more_than_10yrs_than_her))
+proportion_based_on_born_in_usa <- rownames_to_column(proportion_based_on_born_in_usa, var="born_int_USstate")
+proportion_based_on_born_in_usa$total <- proportion_based_on_born_in_usa$`0` + proportion_based_on_born_in_usa$`1`
+proportion_based_on_born_in_usa$prop <- proportion_based_on_born_in_usa$`1` / proportion_based_on_born_in_usa$total
+
+ggplot(data = proportion_based_on_born_in_usa, aes(y = born_int_USstate, x = prop)) +
+  geom_col(fill="blue") +
+  labs(
+    title = "Proportion of Couples Where Man is 10+ Years Older",
+       subtitle = "By born in US",
+       y = "BORN IN",
+       x = "Proportion"
+  )
+
+
+
+```
+
+***We also see that different states may have an affect on the proportions of women married to men. Though, as we see with all the charts above, the overall proportion is still very low.***
+
+```{r}
+by_state <- as.data.frame.matrix(xtabs(data= trad_data, formula = ~ STATEFIP + he_more_than_10yrs_than_her))
+
+by_state <- rownames_to_column(by_state, var="State")
+by_state$total <- by_state$`0` + by_state$`1`
+by_state$prop <- by_state$`1` / by_state$total
+
+by_state$State <- with(
+  by_state,
+  reorder(State, prop)
+)
+
+ggplot(data= by_state, aes(x= prop, y= State)) + 
+  geom_col(fill="red")
+```
+
+***The overall low proportion trend we see in all the graphs above may be attributed to overall low percent of men who have married women 10 years or younger.***
+
+```{r}
+ggplot(trad_data, aes(y = he_more_than_10yrs_than_her)) +
+  geom_bar(aes(x = after_stat(prop))) +
+  labs(
+    title = "Proportion of Couples Where Man is 10+ Years Older",
+    x = "Proportion",
+    y = "He is More Than 10 Years Older"
+  )
+```
+
+***In our logistic modal, we set a low threshold to account for a low volume of records where, in a traditional marriage, a woman's age is at least 10 years younger than the man. However, we notice that our modal has a large bias towards predicting 0s. This may be due to an extreme low volume of records where a woman's age is at least 10 years younger than the man***
+
+```{r, echo=FALSE}
+logistic_modal <- glm(data = trad_data, formula = he_more_than_10yrs_than_her ~ same_race + RACE + h_race + EDUC + STATEFIP , family = binomial)
+
+predict_val <- predict(logistic_modal, trad_data, type = "response")
+
+roc_obj <- roc(trad_data$he_more_than_10yrs_than_her, predict_val)
+
+best_thr <- coords(roc_obj, "best", ret = "threshold")
+print(best_thr)
+
+summary(logistic_modal)
+auc(roc_obj)
+pred <- as.integer(predict_val >= 0.08011561)
+table(pred, trad_data$he_more_than_10yrs_than_her)
+
+
+```
+
+
