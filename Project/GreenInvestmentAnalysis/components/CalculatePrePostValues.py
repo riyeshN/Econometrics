@@ -70,20 +70,17 @@ class CalculatePrePostValues:
 
     def draw_aar_graph_for_pre_post(self, event_date_str, file_name):
 
-        # 1. Prepare Data
         full_ar_df = pd.concat([self.__abnormal_return_pre, self.__abnormal_return_post], axis=0)
         full_ar_df.sort_index(inplace=True)
 
         car_df = full_ar_df.cumsum()
 
-        # 2. Calculate Statistics
         n = car_df.shape[1]
         mean_car = car_df.mean(axis=1)
         se_car = car_df.sem(axis=1)
         ci_upper = mean_car + (1.96 * se_car)
         ci_lower = mean_car - (1.96 * se_car)
 
-        # 3. Plotting
         plt.figure(figsize=(12, 6))
 
         plt.plot(mean_car.index, mean_car, color='black', linewidth=2, label='Mean CAR')
@@ -108,7 +105,7 @@ class CalculatePrePostValues:
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        plt.savefig(file_name, dpi=300)  # dpi=300 makes it high resolution
+        plt.savefig(file_name, dpi=300) 
 
     def get_abnormal_return_pre(self) -> pd.DataFrame:
         return self.__abnormal_return_pre.copy(deep=True)
